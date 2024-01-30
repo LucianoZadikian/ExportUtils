@@ -6,7 +6,6 @@ import importlib
 
 import lzdExport_utils as lzd_utils
 importlib.reload(lzd_utils)
-
 def create_ui(window_name):
     margin = 2
     ensure_root_dir_option_var()
@@ -31,8 +30,9 @@ def create_ui(window_name):
     reset_button = cmds.button(label='Reset to Default', p=reset_button_row_layout, ann='Resets (or creates) the Root Directory to the assets folder in the parent directory of your maya project.',
                                c=partial(update_text_field_from_function, root_dir_grp[2], reset_root_dir_option_var))
 
+    # Needs optionVar
     # Export Type Menu
-    export_type_menu = cmds.optionMenuGrp(l='Export Type:', p=main_column_layout, adj=True)
+    export_type_menu = cmds.optionMenuGrp(l='Export Type:', p=main_column_layout, adj=True, cc=partial(write_string_option_var, 'lzd_export_type'))
     export_type_menu_single_file = cmds.menuItem(l='Single File', ann='Exports your whole selection as one file, with the name of your first selected object.')
     export_type_menu_multi_file = cmds.menuItem(l='Multiple Files', ann='Exports your selection into multiple files for every object, do not use this with groups.')
     export_type_menu_multi_folder = cmds.menuItem(l='Multiple Folders', ann='Exports your selection into multiple folders for every object, do not use this with groups.')
@@ -41,10 +41,8 @@ def create_ui(window_name):
     export_button_parent_layout = cmds.formLayout(p=base_layout, nd=3)
     cmds.formLayout(base_layout, e=True, attachForm=[(export_button_parent_layout, 'left', margin), (export_button_parent_layout, 'right', margin), (export_button_parent_layout, 'bottom', margin)])    
     cmds.formLayout(export_button_parent_layout, e=True)
-    
-    cur_export_type = cmds.optionMenuGrp(export_type_menu, q=True, value=True)
-    b1 = cmds.button('Export', command=partial(export, cur_export_type))
-    b2 = cmds.button('Export and Close', command=partial(export_and_close, cur_export_type, window_name))
+    b1 = cmds.button('Export', command=partial(export))
+    b2 = cmds.button('Export and Close', command=partial(export_and_close, window_name))
     b3 = cmds.button(l='Close', command=partial(close_window, window_name))
 
     
@@ -57,18 +55,18 @@ def create_ui(window_name):
                                                              (b3, 'left', margin, 2)])
     cmds.showWindow(module_window)
 
-def export_and_close(export_type, window, *args):
-    export(export_type)
+def export_and_close(window, *args):
+    export()
     close_window(window)
 
-def export(export_type, *args):
-    lzd_utils.export(export_type)
+def export(*args):
+    lzd_utils.export()
 
 def close_window(window, *args):
     cmds.deleteUI(window)
 
 def build_file_dialog_grp(parent, label=str, optionVar=str, annotation=str):
-    layout = cmds.rowLayout(p=parent, numberOfColumns=3, adjustableColumn=2, annotation=annotation,w=300)
+    layout = cmds.rowLayout(p=parent, numberOfColumns=3, adjustableColumn=2, annotation=annotation,w=300, cw=(1, 125))
     text = cmds.text(p=layout, label=label)
     text_field = cmds.textField(p=layout, 
                                 tx=cmds.optionVar(q=optionVar), 
@@ -96,8 +94,9 @@ def populate_text_field_from_file_dialog(text_field, text_changed_function,*args
 def execute_file_dialog():
      return cmds.fileDialog2(fileMode=2, dir=cmds.optionVar(q='lzd_root_dir'))[0]
 
-def write_string_option_var(option_var_name, *args):
-       cmds.optionVar(stringValue=(option_var_name, args[0]))
+def write_string_option_var(option_var_name, *args): 
+       cmds.optionVar(stringValue=(option_var_name, args[0]))  
+       print(cmds.optionVar(q=option_var_name))
 
 # Reset or create optionVar for "root dir" if project changes or optionVar doesn't exist.
 def ensure_root_dir_option_var():
